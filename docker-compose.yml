@@ -1,0 +1,45 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "PORT:PORT"
+    environment:
+      - PORT="your port"
+      - SERVICEPATH='define where the yaml file exists'
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:PORT/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    volumes:
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources
+      # Uncomment to preserve Grafana configuration
+      # - ./data:/var/lib/grafana
+
+networks:
+  monitoring:
